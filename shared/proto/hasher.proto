@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package hasher;
+
+service HasherService {
+  rpc Compare (CompareRequest) returns (CompareResponse);
+}
+
+message CompareRequest {
+  string plain = 1;
+  string hash = 2;
+}
+
+message CompareResponse {
+  bool match = 1;
+}
