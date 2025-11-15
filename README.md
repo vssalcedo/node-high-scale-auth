@@ -86,6 +86,103 @@ Your API should now be running at:
 
 ---
 
+## 🚢 Deployment to DigitalOcean
+
+This project includes infrastructure-as-code (Terraform) and deployment scripts to deploy the entire stack to DigitalOcean Kubernetes.
+
+### Prerequisites
+
+Before deploying, ensure you have:
+
+- **Terraform** installed (v1.5.0 or higher)
+- **DigitalOcean CLI** (`doctl`) installed and authenticated
+- **kubectl** installed
+- **Helm** installed (for SigNoz observability)
+- A **DigitalOcean API token** with appropriate permissions
+- A **Google Cloud service account key** (JSON) for pulling Docker images from GCR (stored as `infra/concurrent-login-docker-images-key.json`)
+
+### 1️⃣ Configure Terraform Variables
+
+Navigate to the `infra` directory and create or edit `terraform.tfvars`:
+
+```bash
+cd infra
+```
+
+Adapt the following variables in `variables.tf` to your needs:
+
+```hcl
+region                = "nyc1"  # or your preferred region
+api_instance_type     = "s-4vcpu-8gb"
+hashing_instance_type = "s-8vcpu-16gb"
+min_hashing_nodes     = 1
+max_hashing_nodes     = 19
+```
+
+Set the following variable in `terraform.tfvars`:
+
+```bash
+do_token = "{{ your_own_do_token }}"
+```
+
+### 2️⃣ Run the Deployment Script
+
+The `deploy.sh` script automates the entire deployment process:
+
+```bash
+cd infra
+./deploy.sh
+```
+
+This script will:
+
+1. **Provision Infrastructure**: Apply Terraform to create a DigitalOcean Kubernetes cluster with two node pools:
+   - `api-pool`: Auto-scaling pool (1-5 nodes) for the API service
+   - `hashing-pool`: Auto-scaling pool (1-19 nodes) for CPU-intensive hashing operations
+
+2. **Configure kubectl**: Connect to the newly created cluster
+
+3. **Set up Secrets**: Create Docker registry secrets for pulling images from Google Container Registry
+
+4. **Deploy Services**: Apply all Kubernetes manifests (deployments, services, HPA, etc.)
+
+5. **Install Dependencies**: 
+   - Install Kubernetes Metrics Server for HPA
+   - Install SigNoz for observability and monitoring
+
+6. **Restart Deployments**: Ensure all services are running with the latest configuration
+
+### 3️⃣ Verify Deployment
+
+After the script completes, verify your deployment:
+
+```bash
+# Check cluster status
+kubectl get nodes
+
+# Check all pods
+kubectl get pods
+
+# Check services
+kubectl get services
+
+# Check HPA status
+kubectl get hpa
+```
+
+### 4️⃣ Access SigNoz Dashboard
+
+To access the SigNoz observability dashboard:
+
+```bash
+# Port-forward to access SigNoz UI
+kubectl port-forward -n signoz svc/signoz-frontend 3301:3301
+```
+
+Then open [http://localhost:3301](http://localhost:3301) in your browser to access the SigNoz dashboard.
+
+---
+
 ##  Links 
 
 - [My Youtube channel](https://www.youtube.com/@vssalcedo)

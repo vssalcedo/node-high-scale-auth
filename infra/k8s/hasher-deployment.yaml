@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hasher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hasher
+  template:
+    metadata:
+      labels:
+        app: hasher
+    spec:
+      nodeSelector:
+        doks.digitalocean.com/node-pool: hashing-pool
+      imagePullSecrets:
+        - name: gcr-pull-secret
+      containers:
+      - name: hasher
+        image: us-central1-docker.pkg.dev/concurrent-login/default/hasher:latest
+        ports:
+        - containerPort: 50051
+        env:
+        - name: UV_THREADPOOL_SIZE
+          value: "4"
+          # --- OpenTelemetry Configuration ---
+        - name: OTEL_SERVICE_NAME
+          value: "hasher-service"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://signoz-otel-collector.signoz.svc.cluster.local:4318"
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: "http/protobuf"
+        resources:
+          requests:
+            cpu: "3500m"   
+          limits:
+            cpu: "4000m"   
